@@ -78,8 +78,8 @@ configuredProviders.push(
           console.warn('Database query failed, falling back to mock users', error)
         }
 
-        // Fall back to mock users if database query fails or is offline
-        if (!user) {
+        // Fall back to mock users if database query fails, is offline, or user record is missing password hash
+        if (!user || !('passwordHash' in user) || !user.passwordHash) {
           user = getMockUserByEmail(parsed.data.email)
         }
 
