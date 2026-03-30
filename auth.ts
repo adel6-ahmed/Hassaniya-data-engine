@@ -87,6 +87,7 @@ configuredProviders.push(
 
         // Check if user is active
         if (!user.isActive) {
+          console.warn('[auth] login attempt for inactive user', parsed.data.email)
           throw new Error('Account is inactive')
         }
 
@@ -97,6 +98,13 @@ configuredProviders.push(
           approvalStatus: (user as any).approvalStatus ?? 'APPROVED',
           passwordHash: (user as any).passwordHash || null,
         }
+
+        console.log('[auth] verify credentials', {
+          email: parsed.data.email,
+          role: userWithApproval.role,
+          userFromMock: user.id && user.id.length <= 3, // simple heuristic for mock vs db in this setup
+          hasPasswordHash: Boolean(userWithApproval.passwordHash),
+        })
 
         // Check approval status for privileged roles
         if (userWithApproval.role === 'REVIEWER' || userWithApproval.role === 'ADMIN') {
@@ -112,6 +120,7 @@ configuredProviders.push(
 
         const validPassword = await bcrypt.compare(parsed.data.password, userWithApproval.passwordHash)
         if (!validPassword) {
+          console.warn('[auth] invalid password for', parsed.data.email)
           return null
         }
 
