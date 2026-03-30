@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
         console.log('Got public contributor ID:', resolvedContributorId)
       } catch (error) {
         console.error('Failed to get public contributor:', error)
-        return NextResponse.json({ success: false, error: 'Unable to resolve contributor', details: error.message }, { status: 400 })
+        return NextResponse.json({ success: false, error: 'Unable to resolve contributor', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 400 })
       }
     }
 
