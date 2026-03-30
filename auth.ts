@@ -39,6 +39,7 @@ configuredProviders.push(
       password: { label: 'Password', type: 'password' },
     },
     async authorize(credentials) {
+        console.warn('[auth] authorize called', { credentials: { email: credentials?.email ? '[REDACTED]' : null } })
         // In development mode, allow login with email only
         // In production, require both email and password
         const isDevMode = process.env.NODE_ENV === 'development'
