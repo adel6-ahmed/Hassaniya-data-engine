@@ -6,6 +6,7 @@ const PUBLIC_NAME = 'Public Contributor'
 
 export async function getPublicContributorId(): Promise<string> {
   try {
+    console.log('DATABASE_URL present:', !!process.env.DATABASE_URL)
     console.log('Looking for existing public contributor')
     const existing = await prisma.user.findUnique({
       where: { email: PUBLIC_EMAIL },
