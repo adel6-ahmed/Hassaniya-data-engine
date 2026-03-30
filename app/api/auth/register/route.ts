@@ -21,7 +21,16 @@ export async function POST(req: NextRequest) {
     const { name, email, password, role = 'CONTRIBUTOR' } = parsed.data
 
     // Check if user exists
-    const existing = await prisma.user.findUnique({ where: { email } })
+    let existing = null
+    let dbConnected = true
+    try {
+      existing = await prisma.user.findUnique({ where: { email } })
+    } catch (dbError) {
+      dbConnected = false
+      console.warn('Database connection failed during signup check', dbError)
+      // Allow signup but note that it may fail on actual save
+    }
+
     if (existing) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 409 })
     }
@@ -32,31 +41,43 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password, 12)
 
-    // Create user with password hash
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        role: role as 'CONTRIBUTOR' | 'REVIEWER' | 'ADMIN',
-        isApproved,
-        approvalStatus: approvalStatus as 'PENDING' | 'APPROVED' | 'REJECTED',
-        passwordHash,
-      },
-    })
+    // Try to create user with password hash
+    try {
+      const user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          role: role as 'CONTRIBUTOR' | 'REVIEWER' | 'ADMIN',
+          isApproved,
+          approvalStatus: approvalStatus as 'PENDING' | 'APPROVED' | 'REJECTED',
+          passwordHash,
+        },
+      })
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isApproved: user.isApproved,
-        approvalStatus: user.approvalStatus
-      },
-      message: role === 'CONTRIBUTOR' ? 'Account created successfully' : 'Account request submitted. Please wait for admin approval.'
-    }, { status: 201 })
-  } catch {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isApproved: user.isApproved,
+          approvalStatus: user.approvalStatus
+        },
+        message: role === 'CONTRIBUTOR' ? 'Account created successfully' : 'Account request submitted. Please wait for admin approval.'
+      }, { status: 201 })
+    } catch (createError) {
+      console.error('Database create error during signup:', createError)
+      // If database is unavailable, provide helpful message
+      if (!dbConnected) {
+        return NextResponse.json({
+          error: 'Database is currently unavailable. Please try again later or contact administrator. For testing, use existing demo accounts.'
+        }, { status: 503 })
+      }
+      throw createError
+    }
+  } catch (error) {
+    console.error('Signup error:', error)
+    return NextResponse.json({ error: 'Server error. Database may be unavailable.' }, { status: 500 })
   }
 }
