@@ -74,6 +74,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('Environment check:')
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL)
+    console.log('DIRECT_URL exists:', !!process.env.DIRECT_URL)
+    console.log('NODE_ENV:', process.env.NODE_ENV)
+    
     // Resolution order for contributorId (same as dialogues, texts, proverbs & faq routes)
     let resolvedContributorId: string | null = null
 
