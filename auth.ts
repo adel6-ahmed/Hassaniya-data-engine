@@ -81,9 +81,16 @@ configuredProviders.push(
         // Fall back to mock users if database query fails, is offline, or user record is missing password hash
         if (!user || !('passwordHash' in user) || !user.passwordHash) {
           user = getMockUserByEmail(parsed.data.email)
+          console.warn('[auth] fallback user loaded', {
+            email: parsed.data.email,
+            user: user ? { id: user.id, role: user.role, hasPasswordHash: !!user.passwordHash } : null,
+          })
         }
 
-        if (!user) return null
+        if (!user) {
+          console.warn('[auth] no user found after fallback', parsed.data.email)
+          return null
+        }
 
         // Check if user is active
         if (!user.isActive) {
