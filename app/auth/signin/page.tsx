@@ -32,9 +32,18 @@ export default function SignInPage() {
 
   useEffect(() => {
     const fetchCsrfToken = async () => {
-      const token = await getCsrfToken()
-      if (csrfRef.current && token) {
-        csrfRef.current.value = token
+      try {
+        const token = await getCsrfToken({ 
+          baseUrl: typeof window !== 'undefined' ? window.location.origin : 'https://hassaniya-dataset-platform.vercel.app'
+        })
+        if (csrfRef.current && token) {
+          csrfRef.current.value = token
+          console.log('CSRF token set:', token.substring(0, 10) + '...')
+        } else {
+          console.error('No CSRF token received')
+        }
+      } catch (error) {
+        console.error('Failed to get CSRF token:', error)
       }
     }
     fetchCsrfToken()
