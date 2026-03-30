@@ -13,6 +13,7 @@ export const mockUsers = [
     emailVerified: null,
     image: null,
     region: 'NOUAKCHOTT',
+    passwordHash: '$2b$12$lxYwOv/f9IycKJyXvNwX4uv0OjWJAz6e/3QMVTiGuiahuRuipf/26',
   },
   {
     id: '2',
@@ -25,6 +26,7 @@ export const mockUsers = [
     emailVerified: null,
     image: null,
     region: 'NOUADHIBOU',
+    passwordHash: '$2b$12$6tEX5XwchRy8qzohZaGF0u5gcwJBmuIGLJDUyuBN4sA/48pPxV6eK',
   },
   {
     id: '3',
@@ -37,6 +39,7 @@ export const mockUsers = [
     emailVerified: null,
     image: null,
     region: 'KIFFA',
+    passwordHash: '$2b$12$dscuX3NZ2aYGJD/77EzXGekEDjR9bHO51Vs6HWlioht.hAnQ.2xRy',
   },
   {
     id: '4',
@@ -68,5 +71,6 @@ export function getMockUserByEmail(email: string) {
     isActive: user.isActive,
     isApproved: user.isApproved,
     approvalStatus: user.approvalStatus,
+    passwordHash: user.passwordHash || null,
   }
 }
