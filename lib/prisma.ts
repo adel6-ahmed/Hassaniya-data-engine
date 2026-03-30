@@ -14,6 +14,11 @@ const prismaClient =
     // Keep logs production-safe: errors only in dev, silence in prod.
     log: isDevelopment ? ['error', 'warn'] : ['error'],
     errorFormat: 'pretty',
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL || "postgresql://postgres.vrhcqcryleaqpzkicfqv:HO2u2suDcnbq5p6d@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+      }
+    }
   })
 
 // Log database connection info (without password)
