@@ -1,0 +1,533 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+model User {
+  id                String             @id @default(cuid())
+  name              String?
+  email             String             @unique
+  emailVerified     DateTime?
+  image             String?
+  role              UserRole           @default(CONTRIBUTOR)
+  isActive          Boolean            @default(true)
+  isApproved        Boolean            @default(false)
+  approvalStatus    ApprovalStatus     @default(PENDING)
+  passwordHash      String?
+  bio               String?
+  region            Region?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  accounts          Account[]
+  assignedTasks     ContributorTask[]  @relation("TaskAssignee")
+  createdTasks      ContributorTask[]  @relation("TaskCreator")
+  exportRequests    DataExport[]
+  dialogueTurns     DialogueTurn[]
+  faqEntries        FaqEntry[]
+  reviewedFaqs      FaqEntry[]         @relation("FaqReviewer")
+  monolingualTexts  MonolingualText[]
+  reviewedTexts     MonolingualText[]  @relation("TextReviewer")
+  parallelSentences ParallelSentence[]
+  reviewedSentences ParallelSentence[] @relation("SentenceReviewer")
+  proverbs          Proverb[]
+  reviewedProverbs  Proverb[]          @relation("ProverbReviewer")
+  sessions          Session[]
+  taskSubmissions   TaskSubmission[]
+  variationGroups   VariationGroup[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model VariationGroup {
+  id                String             @id @default(cuid())
+  meaningArabic     String
+  meaningFrench     String?
+  domain            Domain             @default(GENERAL)
+  intent            Intent             @default(OTHER)
+  createdById       String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  dialogueTurns     DialogueTurn[]
+  parallelSentences ParallelSentence[]
+  createdBy         User               @relation(fields: [createdById], references: [id])
+
+  @@map("variation_groups")
+}
+
+model ParallelSentence {
+  id                      String             @id @default(cuid())
+  hassaniyaSentence       String
+  msaTranslation          String?
+  frenchTranslation       String?
+  rawText                 String
+  normalizedText          String
+  category                String?
+  domain                  Domain             @default(GENERAL)
+  intent                  Intent             @default(OTHER)
+  region                  Region             @default(OTHER)
+  emotionalTone           EmotionalTone      @default(NEUTRAL)
+  styleType               StyleType          @default(COLLOQUIAL)
+  confidenceLevel         Int                @default(3)
+  contributorNotes        String?
+  verifiedByNativeSpeaker Boolean            @default(false)
+  isDuplicate             Boolean            @default(false)
+  duplicateOfId           String?
+  curationStage           CurationStage      @default(RAW)
+  reviewStatus            ReviewStatus       @default(PENDING)
+  isExportReady           Boolean            @default(false)
+  version                 Int                @default(1)
+  lastVerifiedAt          DateTime?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  contributorId           String
+  reviewerId              String?
+  variationGroupId        String?
+  contributor             User               @relation(fields: [contributorId], references: [id])
+  duplicateOf             ParallelSentence?  @relation("DuplicateSentences", fields: [duplicateOfId], references: [id])
+  duplicates              ParallelSentence[] @relation("DuplicateSentences")
+  reviewer                User?              @relation("SentenceReviewer", fields: [reviewerId], references: [id])
+  variationGroup          VariationGroup?    @relation(fields: [variationGroupId], references: [id])
+
+  @@index([normalizedText])
+  @@index([domain, intent])
+  @@index([reviewStatus, curationStage])
+  @@index([isExportReady])
+  @@index([variationGroupId])
+  @@map("parallel_sentences")
+}
+
+model MonolingualText {
+  id                       String        @id @default(cuid())
+  title                    String?
+  hassaniyaText            String
+  rawText                  String
+  normalizedText           String
+  topic                    String?
+  textType                 String?
+  domain                   Domain        @default(GENERAL)
+  region                   Region        @default(OTHER)
+  emotionalTone            EmotionalTone @default(NEUTRAL)
+  writingStyle             StyleType     @default(COLLOQUIAL)
+  sourceType               SourceType    @default(ORIGINAL)
+  sourceUrl                String?
+  sourcePlatform           String?
+  containsPersonalInfo     Boolean       @default(false)
+  needsManualPrivacyReview Boolean       @default(false)
+  confidenceLevel          Int           @default(3)
+  wordCount                Int?
+  characterCount           Int?
+  curationStage            CurationStage @default(RAW)
+  reviewStatus             ReviewStatus  @default(PENDING)
+  isExportReady            Boolean       @default(false)
+  isSegmented              Boolean       @default(false)
+  version                  Int           @default(1)
+  lastVerifiedAt           DateTime?
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  contributorId            String
+  reviewerId               String?
+  contributor              User          @relation(fields: [contributorId], references: [id])
+  reviewer                 User?         @relation("TextReviewer", fields: [reviewerId], references: [id])
+  segments                 TextSegment[]
+
+  @@index([domain])
+  @@index([reviewStatus, curationStage])
+  @@index([isExportReady])
+  @@map("monolingual_texts")
+}
+
+model TextSegment {
+  id             String          @id @default(cuid())
+  textId         String
+  segmentIndex   Int
+  segmentText    String
+  normalizedText String
+  createdAt      DateTime        @default(now())
+  text           MonolingualText @relation(fields: [textId], references: [id], onDelete: Cascade)
+
+  @@index([textId])
+  @@map("text_segments")
+}
+
+model Proverb {
+  id                      String          @id @default(cuid())
+  proverbText             String
+  meaningExplanation      String
+  literalTranslation      String?
+  frenchTranslation       String?
+  usageContext            String?
+  rawText                 String
+  normalizedText          String
+  category                ProverbCategory @default(PROVERB)
+  domain                  Domain          @default(GENERAL)
+  region                  Region          @default(OTHER)
+  confidenceLevel         Int             @default(3)
+  verifiedByNativeSpeaker Boolean         @default(false)
+  isDuplicate             Boolean         @default(false)
+  curationStage           CurationStage   @default(RAW)
+  reviewStatus            ReviewStatus    @default(PENDING)
+  isExportReady           Boolean         @default(false)
+  version                 Int             @default(1)
+  lastVerifiedAt          DateTime?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  contributorId           String
+  reviewerId              String?
+  contributor             User            @relation(fields: [contributorId], references: [id])
+  reviewer                User?           @relation("ProverbReviewer", fields: [reviewerId], references: [id])
+
+  @@index([category, domain])
+  @@index([reviewStatus, curationStage])
+  @@index([normalizedText])
+  @@map("proverbs")
+}
+
+model Dialogue {
+  id            String         @id @default(cuid())
+  dialogueHash  String         @unique
+  title         String?
+  topic         String?
+  domain        Domain         @default(GENERAL)
+  region        Region         @default(OTHER)
+  curationStage CurationStage  @default(RAW)
+  reviewStatus  ReviewStatus   @default(PENDING)
+  isExportReady Boolean        @default(false)
+  turnCount     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  turns         DialogueTurn[]
+
+  @@index([domain])
+  @@index([reviewStatus, curationStage])
+  @@map("dialogues")
+}
+
+model DialogueTurn {
+  id                      String          @id @default(cuid())
+  dialogueId              String
+  turnIndex               Int
+  utteranceText           String
+  rawText                 String
+  normalizedText          String
+  textHash                String
+  speakerRole             SpeakerRole     @default(CUSTOMER)
+  dialogueStage           DialogueStage   @default(OPENING)
+  intent                  Intent          @default(OTHER)
+  domain                  Domain          @default(GENERAL)
+  topic                   String?
+  region                  Region          @default(OTHER)
+  emotionalTone           EmotionalTone   @default(NEUTRAL)
+  confidenceLevel         Int             @default(3)
+  verifiedByNativeSpeaker Boolean         @default(false)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  contributorId           String
+  variationGroupId        String?
+  contributor             User            @relation(fields: [contributorId], references: [id])
+  dialogue                Dialogue        @relation(fields: [dialogueId], references: [id], onDelete: Cascade)
+  variationGroup          VariationGroup? @relation(fields: [variationGroupId], references: [id])
+
+  @@index([dialogueId, turnIndex])
+  @@index([domain, intent])
+  @@map("dialogue_turns")
+}
+
+model FaqEntry {
+  id                 String        @id @default(cuid())
+  questionHassaniya  String
+  questionMsa        String?
+  answerHassaniya    String
+  answerMsa          String?
+  answerFrench       String?
+  rawQuestion        String
+  normalizedQuestion String
+  domain             Domain        @default(GENERAL)
+  intent             Intent        @default(FAQ_REQUEST)
+  sourceType         SourceType    @default(ORIGINAL)
+  validFrom          DateTime?
+  validUntil         DateTime?
+  isActive           Boolean       @default(true)
+  curationStage      CurationStage @default(RAW)
+  reviewStatus       ReviewStatus  @default(PENDING)
+  isExportReady      Boolean       @default(false)
+  version            Int           @default(1)
+  lastVerifiedAt     DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  contributorId      String
+  reviewerId         String?
+  contributor        User          @relation(fields: [contributorId], references: [id])
+  reviewer           User?         @relation("FaqReviewer", fields: [reviewerId], references: [id])
+
+  @@index([domain, intent])
+  @@index([reviewStatus, curationStage])
+  @@index([isActive, isExportReady])
+  @@map("faq_entries")
+}
+
+model DuplicateFlag {
+  id            String    @id @default(cuid())
+  sourceTable   String
+  sourceId      String
+  duplicateOfId String
+  similarity    Float
+  flaggedAt     DateTime  @default(now())
+  resolvedAt    DateTime?
+  isResolved    Boolean   @default(false)
+
+  @@index([sourceTable, sourceId])
+  @@map("duplicate_flags")
+}
+
+model QualityLog {
+  id          String   @id @default(cuid())
+  sourceTable String
+  sourceId    String
+  checkType   String
+  message     String
+  severity    String
+  createdAt   DateTime @default(now())
+
+  @@index([sourceTable, sourceId])
+  @@map("quality_logs")
+}
+
+model ContributorTask {
+  id           String           @id @default(cuid())
+  title        String
+  description  String
+  instructions String
+  moduleTarget String
+  domain       Domain           @default(GENERAL)
+  intent       Intent?
+  targetCount  Int              @default(10)
+  dueDate      DateTime?
+  status       TaskStatus       @default(ACTIVE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  createdById  String
+  assigneeId   String?
+  assignee     User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy    User             @relation("TaskCreator", fields: [createdById], references: [id])
+  submissions  TaskSubmission[]
+
+  @@index([status])
+  @@index([assigneeId])
+  @@map("contributor_tasks")
+}
+
+model TaskSubmission {
+  id            String          @id @default(cuid())
+  taskId        String
+  contributorId String
+  sourceTable   String
+  sourceId      String
+  submittedAt   DateTime        @default(now())
+  contributor   User            @relation(fields: [contributorId], references: [id])
+  task          ContributorTask @relation(fields: [taskId], references: [id])
+
+  @@unique([taskId, contributorId, sourceId])
+  @@map("task_submissions")
+}
+
+model DataExport {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  exportType    String
+  format        String
+  filters       Json?
+  trainRatio    Float     @default(0.8)
+  valRatio      Float     @default(0.1)
+  testRatio     Float     @default(0.1)
+  totalEntries  Int?
+  fileUrl       String?
+  status        String    @default("pending")
+  dataVersion   String?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+  requestedById String
+  requestedBy   User      @relation(fields: [requestedById], references: [id])
+
+  @@index([status])
+  @@map("data_exports")
+}
+
+model PlatformStats {
+  id                  String   @id @default(cuid())
+  totalSentences      Int      @default(0)
+  totalTexts          Int      @default(0)
+  totalProverbs       Int      @default(0)
+  totalDialogues      Int      @default(0)
+  totalFaqEntries     Int      @default(0)
+  totalDuplicateFlags Int      @default(0)
+  totalExportReady    Int      @default(0)
+  totalPendingReview  Int      @default(0)
+  rawCount            Int      @default(0)
+  reviewedCount       Int      @default(0)
+  normalizedCount     Int      @default(0)
+  exportReadyCount    Int      @default(0)
+  computedAt          DateTime @default(now())
+
+  @@map("platform_stats")
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_REVISION
+}
+
+enum CurationStage {
+  RAW
+  REVIEWED
+  NORMALIZED
+  EXPORT_READY
+}
+
+enum Domain {
+  GENERAL
+  TELECOM
+  BANKING
+  ECOMMERCE
+  LOGISTICS
+  PUBLIC_SERVICES
+  EDUCATION
+  HEALTHCARE
+}
+
+enum Intent {
+  GREETING
+  BILLING_ISSUE
+  NETWORK_ISSUE
+  ACCOUNT_HELP
+  PASSWORD_RESET
+  BRANCH_LOCATION
+  PACKAGE_INFO
+  COMPLAINT
+  FAQ_REQUEST
+  OTHER
+}
+
+enum Region {
+  NOUAKCHOTT
+  NOUADHIBOU
+  ROSSO
+  KIFFA
+  KAEDI
+  ZOUERATE
+  ATAR
+  TIDJIKJA
+  NEMA
+  AIOUN
+  OTHER
+}
+
+enum EmotionalTone {
+  NEUTRAL
+  POSITIVE
+  NEGATIVE
+  FORMAL
+  INFORMAL
+  HUMOROUS
+}
+
+enum StyleType {
+  COLLOQUIAL
+  FORMAL
+  POETIC
+  NARRATIVE
+  INSTRUCTIONAL
+}
+
+enum SourceType {
+  ORIGINAL
+  TRANSCRIBED
+  COLLECTED
+  GENERATED
+  CROWDSOURCED
+}
+
+enum ProverbCategory {
+  PROVERB
+  IDIOM
+  EXPRESSION
+  SAYING
+}
+
+enum SpeakerRole {
+  CUSTOMER
+  AGENT
+  ASSISTANT
+  SYSTEM
+}
+
+enum DialogueStage {
+  OPENING
+  CLARIFICATION
+  RESOLUTION
+  ESCALATION
+  CLOSING
+}
+
+enum TaskStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum UserRole {
+  ADMIN
+  REVIEWER
+  CONTRIBUTOR
+}
