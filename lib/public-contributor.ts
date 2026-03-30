@@ -6,12 +6,17 @@ const PUBLIC_NAME = 'Public Contributor'
 
 export async function getPublicContributorId(): Promise<string> {
   try {
+    console.log('Looking for existing public contributor')
     const existing = await prisma.user.findUnique({
       where: { email: PUBLIC_EMAIL },
       select: { id: true },
     })
-    if (existing) return existing.id
+    if (existing) {
+      console.log('Found existing public contributor:', existing.id)
+      return existing.id
+    }
 
+    console.log('Creating new public contributor')
     const created = await prisma.user.create({
       data: {
         name: PUBLIC_NAME,
@@ -23,6 +28,7 @@ export async function getPublicContributorId(): Promise<string> {
       },
       select: { id: true },
     })
+    console.log('Created new public contributor:', created.id)
     return created.id
   } catch (error) {
     console.error('[PublicContributor] Failed to resolve public contributor', error)

@@ -108,9 +108,12 @@ export async function POST(req: NextRequest) {
     // c) If still not resolved, use fallback public user
     if (!resolvedContributorId) {
       try {
+        console.log('Attempting to get public contributor ID')
         resolvedContributorId = await getPublicContributorId()
-      } catch {
-        return NextResponse.json({ success: false, error: 'Unable to resolve contributor' }, { status: 400 })
+        console.log('Got public contributor ID:', resolvedContributorId)
+      } catch (error) {
+        console.error('Failed to get public contributor:', error)
+        return NextResponse.json({ success: false, error: 'Unable to resolve contributor', details: error.message }, { status: 400 })
       }
     }
 
