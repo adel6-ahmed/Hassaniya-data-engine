@@ -39,7 +39,6 @@ configuredProviders.push(
       password: { label: 'Password', type: 'password' },
     },
     async authorize(credentials) {
-        console.warn('[auth] authorize called', { credentials: { email: credentials?.email ? '[REDACTED]' : null } })
         // In development mode, allow login with email only
         // In production, require both email and password
         const isDevMode = process.env.NODE_ENV === 'development'
@@ -82,20 +81,12 @@ configuredProviders.push(
         // Fall back to mock users if database query fails, is offline, or user record is missing password hash
         if (!user || !('passwordHash' in user) || !user.passwordHash) {
           user = getMockUserByEmail(parsed.data.email)
-          console.warn('[auth] fallback user loaded', {
-            email: parsed.data.email,
-            user: user ? { id: user.id, role: user.role, hasPasswordHash: !!user.passwordHash } : null,
-          })
         }
 
-        if (!user) {
-          console.warn('[auth] no user found after fallback', parsed.data.email)
-          return null
-        }
+        if (!user) return null
 
         // Check if user is active
         if (!user.isActive) {
-          console.warn('[auth] login attempt for inactive user', parsed.data.email)
           throw new Error('Account is inactive')
         }
 
@@ -106,13 +97,6 @@ configuredProviders.push(
           approvalStatus: (user as any).approvalStatus ?? 'APPROVED',
           passwordHash: (user as any).passwordHash || null,
         }
-
-        console.warn('[auth] verify credentials', {
-          email: parsed.data.email,
-          role: userWithApproval.role,
-          userFromMock: user.id && user.id.length <= 3, // simple heuristic for mock vs db in this setup
-          hasPasswordHash: Boolean(userWithApproval.passwordHash),
-        })
 
         // Check approval status for privileged roles
         if (userWithApproval.role === 'REVIEWER' || userWithApproval.role === 'ADMIN') {
@@ -128,7 +112,6 @@ configuredProviders.push(
 
         const validPassword = await bcrypt.compare(parsed.data.password, userWithApproval.passwordHash)
         if (!validPassword) {
-          console.warn('[auth] invalid password for', parsed.data.email)
           return null
         }
 
