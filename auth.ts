@@ -99,7 +99,7 @@ configuredProviders.push(
           passwordHash: (user as any).passwordHash || null,
         }
 
-        console.log('[auth] verify credentials', {
+        console.warn('[auth] verify credentials', {
           email: parsed.data.email,
           role: userWithApproval.role,
           userFromMock: user.id && user.id.length <= 3, // simple heuristic for mock vs db in this setup
