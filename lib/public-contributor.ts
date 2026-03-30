@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { UserRole, ApprovalStatus } from '@prisma/client'
 
 const PUBLIC_EMAIL = 'public@system.local'
 const PUBLIC_NAME = 'Public Contributor'
@@ -15,7 +16,10 @@ export async function getPublicContributorId(): Promise<string> {
       data: {
         name: PUBLIC_NAME,
         email: PUBLIC_EMAIL,
-        role: 'CONTRIBUTOR',
+        role: UserRole.CONTRIBUTOR,
+        isActive: true,
+        isApproved: true,
+        approvalStatus: ApprovalStatus.APPROVED,
       },
       select: { id: true },
     })
