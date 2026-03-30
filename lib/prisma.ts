@@ -12,7 +12,7 @@ const prismaClient =
   globalForPrisma.prisma ??
   new PrismaClient({
     // Keep logs production-safe: errors only in dev, silence in prod.
-    log: isDevelopment ? ['error', 'warn'] : ['error'],
+    log: isDevelopment ? ['error', 'warn'] : [],
     errorFormat: 'pretty',
     datasources: {
       db: {
@@ -20,17 +20,6 @@ const prismaClient =
       }
     }
   })
-
-// Log database connection info (without password)
-if (!isDevelopment) {
-  const dbUrl = process.env.DATABASE_URL
-  if (dbUrl) {
-    const url = new URL(dbUrl)
-    console.log('Database host:', url.host, 'port:', url.port, 'database:', url.pathname)
-  } else {
-    console.error('DATABASE_URL not found!')
-  }
-}
 
 // Prevent hot-reload connection leaks in development.
 if (isDevelopment) globalForPrisma.prisma = prismaClient

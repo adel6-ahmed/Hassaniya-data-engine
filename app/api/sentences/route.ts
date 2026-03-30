@@ -74,11 +74,6 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('Environment check:')
-    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL)
-    console.log('DIRECT_URL exists:', !!process.env.DIRECT_URL)
-    console.log('NODE_ENV:', process.env.NODE_ENV)
-    
     // Resolution order for contributorId (same as dialogues, texts, proverbs & faq routes)
     let resolvedContributorId: string | null = null
 
@@ -113,12 +108,9 @@ export async function POST(req: NextRequest) {
     // c) If still not resolved, use fallback public user
     if (!resolvedContributorId) {
       try {
-        console.log('Attempting to get public contributor ID')
         resolvedContributorId = await getPublicContributorId()
-        console.log('Got public contributor ID:', resolvedContributorId)
-      } catch (error) {
-        console.error('Failed to get public contributor:', error)
-        return NextResponse.json({ success: false, error: 'Unable to resolve contributor', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 400 })
+      } catch {
+        return NextResponse.json({ success: false, error: 'Unable to resolve contributor' }, { status: 400 })
       }
     }
 
