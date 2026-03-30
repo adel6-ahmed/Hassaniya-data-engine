@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, type FormEvent } from 'react'
-import { signIn } from 'next-auth/react'
+import { useState, useRef, useEffect, type FormEvent } from 'react'
+import { signIn, getCsrfToken } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 const githubEnabled = Boolean(process.env.NEXT_PUBLIC_GITHUB_CONFIGURED)
@@ -24,10 +24,21 @@ const getErrorFromUrl = () => {
 export default function SignInPage() {
   const emailRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
+  const csrfRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(getErrorFromUrl())
   const [callbackUrl] = useState(getCallbackFromUrl())
   const router = useRouter()
+
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      const token = await getCsrfToken()
+      if (csrfRef.current && token) {
+        csrfRef.current.value = token
+      }
+    }
+    fetchCsrfToken()
+  }, [])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -83,6 +94,9 @@ export default function SignInPage() {
           </div>
         )}
         <form onSubmit={handleSubmit} autoComplete="off">
+          {/* CSRF Token for NextAuth */}
+          <input ref={csrfRef} name="csrfToken" type="hidden" />
+          
           {/* Hidden anti-autofill hints for browsers/password managers */}
           <input type="text" name="fake-username" autoComplete="off" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }} tabIndex={-1} />
           <input type="password" name="fake-password" autoComplete="new-password" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }} tabIndex={-1} />
